@@ -1,52 +1,43 @@
 /** @jsxImportSource @emotion/react */
-import { jsx, css, Global, ClassNames } from "@emotion/react";
+import { css } from "@emotion/react";
 import type { NextPage } from "next";
-import Link from "next/link";
-import { supabase } from "../utils/supabaseClient";
-import { useEffect, useState } from "react";
-import Router from "next/router";
+import Nav from "../components/Nav";
+import { loadStripe } from "@stripe/stripe-js";
+import { useEffect } from "react";
+
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 const Home: NextPage = () => {
-	const [session, setSession]: any = useState(null);
 	useEffect(() => {
-		// @ts-ignore: Unreachable code error
-		setSession(supabase.auth.session());
-		supabase.auth.onAuthStateChange((_event, session) => {
-			setSession(session);
+		// Check to see if this is a redirect back from Checkout
+		const query = new URLSearchParams(window.location.search);
 
-			if (_event === "PASSWORD_RECOVERY") {
-				Router.push("/reset");
-			}
-		});
+		if (query.get("success")) {
+			console.log("Order placed! You will receive an email confirmation.");
+		}
+
+		if (query.get("canceled")) {
+			console.log("Order canceled -- continue to shop around and checkout when you’re ready.");
+		}
 	}, []);
 
 	return (
 		<div
 			css={css`
-				height: 100px;
-				background-color: #181818;
+				min-height: 100vh;
+				width: 100vw;
 			`}
 		>
-			<nav>
-				{session && (
-					<div>
-						<button
-							onClick={() => {
-								supabase.auth.signOut();
-							}}
-						>
-							Sign Out
+			<Nav />
+			<div>
+				<form action="/api/checkout_sessions" method="POST">
+					<section>
+						<button type="submit" role="link">
+							Checkout
 						</button>
-					</div>
-				)}
-				{!session && (
-					<div>
-						<Link href="/login" passHref>
-							<button>Login</button>
-						</Link>
-					</div>
-				)}
-			</nav>
+					</section>
+				</form>
+			</div>
 		</div>
 	);
 };
